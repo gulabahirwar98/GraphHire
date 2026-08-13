@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>GraphHire</title>
+
+    <style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f5f7fb;
+        color: #172033;
+        line-height: 1.6;
+    }
+
+    header {
+        background: #111827;
+        color: white;
+        padding: 32px 8%;
+    }
+
+    header h1 {
+        font-size: 32px;
+        margin-bottom: 5px;
+    }
+
+    header p {
+        color: #cbd5e1;
+        font-size: 15px;
+    }
+
+    .container {
+        width: 86%;
+        max-width: 1150px;
+        margin: 35px auto;
+    }
+
+    .search-box,
+    .card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 25px;
+        margin-bottom: 24px;
+        box-shadow: 0 5px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .search-box h2,
+    .card h2 {
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
+
+    .search-box p {
+        color: #64748b;
+    }
+
+    .search-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 15px;
+    }
+
+    select,
+    input {
+        flex: 1;
+        padding: 13px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 15px;
+        background: white;
+    }
+
+    button {
+        padding: 13px 22px;
+        border: none;
+        border-radius: 8px;
+        background: #2563eb;
+        color: white;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    button:hover {
+        background: #1d4ed8;
+        transform: translateY(-1px);
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .developer-item {
+        padding: 15px;
+        border: 1px solid #e5e7eb;
+        border-radius: 9px;
+        margin-top: 10px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .developer-item:hover {
+        border-color: #2563eb;
+        background: #f8fbff;
+    }
+
+    .developer-item strong {
+        font-size: 16px;
+    }
+
+    .developer-item small {
+        color: #64748b;
+    }
+
+    .info {
+        margin: 12px 0;
+        color: #475569;
+    }
+
+    .info strong {
+        color: #172033;
+    }
+
+    .tag {
+        display: inline-block;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #dbeafe;
+        padding: 5px 10px;
+        border-radius: 20px;
+        margin: 4px 4px 4px 0;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    #message {
+        margin-top: 12px;
+        color: #64748b;
+    }
+
+    #graphResult {
+        margin-top: 20px;
+        padding: 20px;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+    }
+
+    #graphResult h3 {
+        margin-bottom: 15px;
+        font-size: 20px;
+    }
+
+    .empty-state {
+        color: #64748b;
+        padding: 10px 0;
+    }
+
+    @media (max-width: 700px) {
+
+        .grid {
+            grid-template-columns: 1fr;
+        }
+
+        .search-row {
+            flex-direction: column;
+        }
+
+        .container {
+            width: 92%;
+        }
+
+        header {
+            padding: 25px 5%;
+        }
+    }
+</style>
+<script src="https://unpkg.com/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
+
+</head>
+
+<body>
+
+<header>
+    <h1>GraphHire</h1>
+    <p>Explore developers, skills and projects using a graph database.</p>
+</header>
+
+<div class="container">
+
+    <!-- Search -->
+    <div class="search-box">
+
+        <h2>Find Developers by Skill</h2>
+
+        <div class="search-row">
+
+            <select id="skillSelect">
+                <option value="">Loading skills...</option>
+            </select>
+
+            <button onclick="searchDevelopers()">
+                Search
+            </button>
+
+        </div>
+
+        <p id="message"></p>
+
+    </div>
+
+
+    <!-- Results -->
+    <div class="grid">
+
+        <div class="card">
+
+            <h2>Developers</h2>
+
+            <div id="developerResults">
+                Search for a skill to see developers.
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>Developer Profile</h2>
+
+            <div id="developerProfile">
+                Select a developer from the results.
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Project -->
+    <div class="card">
+
+        <h2>Project Profile</h2>
+
+        <div id="projectProfile">
+            Select a developer to view their project.
+        </div>
+
+    </div>
+
+</div>
+<div class="card">
+
+    <h2>Graph Explorer</h2>
+
+    <p>Explore the relationships between a developer, their skills and projects.</p>
+
+    <button onclick="loadGraph('Gulab')">
+        Explore Gulab's Graph
+    </button>
+
+    <div id="graphResult" style="margin-top: 20px;"></div>
+    <div id="cy" style="width: 100%; height: 450px; margin-top: 20px; border: 1px solid #e5e7eb; border-radius: 10px;"></div>
+
+</div>
+
+
+<script>
+async function loadGraph(name) {
+
+    const response =
+        await fetch('/api/graph/' + encodeURIComponent(name));
+
+    const data = await response.json();
+
+    const graphResult =
+        document.getElementById('graphResult');
+
+    graphResult.innerHTML = `
+        <h3>${data.developer}</h3>
+
+        <p><strong>Skills</strong></p>
+
+        ${data.skills
+            .map(skill =>
+                `<span class="tag">${skill}</span>`
+            )
+            .join('')}
+
+        <p style="margin-top:15px;">
+            <strong>Projects</strong>
+        </p>
+
+        ${data.projects
+            .map(project =>
+                `<span class="tag">${project}</span>`
+            )
+            .join('')}
+    `;
+    const elements = [];
+
+    // Developer
+    elements.push({
+        data: {
+            id: 'developer',
+            label: data.developer
+        }
+    });
+
+    // Skills
+    data.skills.forEach((skill, index) => {
+
+        const skillId = 'skill-' + index;
+
+        elements.push({
+            data: {
+                id: skillId,
+                label: skill
+            }
+        });
+
+        elements.push({
+            data: {
+                source: 'developer',
+                target: skillId
+            }
+        });
+    });
+
+    // Projects
+    data.projects.forEach((project, index) => {
+
+        const projectId = 'project-' + index;
+
+        elements.push({
+            data: {
+                id: projectId,
+                label: project
+            }
+        });
+
+        elements.push({
+            data: {
+                source: 'developer',
+                target: projectId
+            }
+        });
+    });
+
+    cytoscape({
+        container: document.getElementById('cy'),
+
+        elements: elements,
+
+        style: [
+            {
+                selector: 'node',
+                style: {
+                    'label': 'data(label)',
+                    'text-valign': 'center',
+                    'text-halign': 'center',
+                    'background-color': '#2563eb',
+                    'color': '#ffffff',
+                    'width': 70,
+                    'height': 70,
+                    'font-size': '12px'
+                }
+            },
+            {
+                selector: 'edge',
+                style: {
+                    'width': 2,
+                    'line-color': '#94a3b8',
+                    'target-arrow-color': '#94a3b8',
+                    'target-arrow-shape': 'triangle'
+                }
+            }
+        ],
+
+        layout: {
+            name: 'cose',
+            animate: true
+        }
+    });
+}
+    // Load skills when page opens
+    async function loadSkills() {
+
+        try {
+
+            const response = await fetch('/api/skills');
+
+            const skills = await response.json();
+
+            const select = document.getElementById('skillSelect');
+
+            select.innerHTML = '<option value="">Select a skill</option>';
+
+            skills.forEach(skill => {
+
+                const option = document.createElement('option');
+
+                option.value = skill;
+                option.textContent = skill;
+
+                select.appendChild(option);
+
+            });
+
+        } catch (error) {
+
+            document.getElementById('message').textContent =
+                'Unable to load skills.';
+
+        }
+    }
+
+
+    // Search developers
+    async function searchDevelopers() {
+
+        const skill = document.getElementById('skillSelect').value;
+
+        if (!skill) {
+
+            document.getElementById('message').textContent =
+                'Please select a skill.';
+
+            return;
+        }
+
+        try {
+
+            const response =
+                await fetch('/api/developers?skill='
+                    + encodeURIComponent(skill));
+
+            const developers = await response.json();
+
+            const resultDiv =
+                document.getElementById('developerResults');
+
+            resultDiv.innerHTML = '';
+
+            if (developers.length === 0) {
+
+                resultDiv.textContent =
+                    'No developers found.';
+
+                return;
+            }
+
+            developers.forEach(developer => {
+
+                const div =
+                    document.createElement('div');
+
+                div.className = 'developer-item';
+
+                div.innerHTML = `
+                    <strong>${developer.name}</strong>
+                    <br>
+                    <small>Click to view profile</small>
+                `;
+
+                div.onclick = () =>
+                    loadDeveloper(developer.name);
+
+                resultDiv.appendChild(div);
+
+            });
+
+        } catch (error) {
+
+            document.getElementById('developerResults').textContent =
+                'Something went wrong.';
+
+        }
+    }
+
+
+    // Load developer profile
+    async function loadDeveloper(name) {
+
+        try {
+
+            const response =
+                await fetch(
+                    '/api/developers/'
+                    + encodeURIComponent(name)
+                );
+
+            const developer = await response.json();
+
+            document.getElementById('developerProfile').innerHTML = `
+
+                <div class="info">
+                    <strong>Name:</strong>
+                    ${developer.name}
+                </div>
+
+                <div class="info">
+                    <strong>Location:</strong>
+                    ${developer.location}
+                </div>
+
+                <div class="info">
+                    <strong>Bio:</strong>
+                    ${developer.bio}
+                </div>
+
+                <div class="info">
+                    <strong>Skills:</strong>
+                    ${developer.skills
+                        .map(skill =>
+                            `<span class="tag">${skill}</span>`
+                        )
+                        .join('')}
+                </div>
+
+                <div class="info">
+                    <strong>Projects:</strong>
+                    ${developer.projects
+                        .map(project =>
+                            `<span
+                                class="tag"
+                                onclick="loadProject('${project}')"
+                                style="cursor:pointer">
+                                ${project}
+                            </span>`
+                        )
+                        .join('')}
+                </div>
+            `;
+
+            if (developer.projects.length > 0) {
+
+                loadProject(developer.projects[0]);
+
+            }
+
+        } catch (error) {
+
+            document.getElementById('developerProfile').textContent =
+                'Unable to load developer profile.';
+
+        }
+    }
+
+
+    // Load project profile
+    async function loadProject(name) {
+
+        try {
+
+            const response =
+                await fetch(
+                    '/api/projects/'
+                    + encodeURIComponent(name)
+                );
+
+            const project = await response.json();
+
+            document.getElementById('projectProfile').innerHTML = `
+
+                <div class="info">
+                    <strong>Project:</strong>
+                    ${project.name}
+                </div>
+
+                <div class="info">
+                    <strong>Skills:</strong>
+                    ${project.skills
+                        .map(skill =>
+                            `<span class="tag">${skill}</span>`
+                        )
+                        .join('')}
+                </div>
+
+                <div class="info">
+                    <strong>Developers:</strong>
+                    ${project.developers
+                        .map(developer =>
+                            `<span class="tag">${developer}</span>`
+                        )
+                        .join('')}
+                </div>
+            `;
+
+        } catch (error) {
+
+            document.getElementById('projectProfile').textContent =
+                'Unable to load project profile.';
+
+        }
+    }
+
+
+    // Start application
+    loadSkills();
+
+</script>
+
+</body>
+</html>
