@@ -144,21 +144,29 @@ It allows GraphHire to retrieve a developer's skills and projects in a single gr
 
 ### Multi-Hop Graph Traversal
 
-The graph model supports multi-hop traversal across connected nodes.
+GraphHire supports multi-hop traversal across connected nodes.
 
 For example:
 
 ```text
-Developer → Project → Skill
+Developer → Skill ← Project
 ```
 
-This represents the following graph path:
+The application uses the following parameterized Cypher query:
 
-```text
-Developer ──WORKED_ON──> Project ──USES──> Skill
+```cypher
+MATCH (d:Developer {name: $name})
+      -[:HAS_SKILL]->(s:Skill)
+      <-[:USES]-(p:Project)
+RETURN d.name AS developer,
+       s.name AS skill,
+       p.name AS project
+ORDER BY p.name
 ```
 
-This multi-hop relationship allows GraphHire to explore skills associated with projects worked on by a developer.
+This query traverses multiple relationships to find projects connected to a developer through their skills.
+
+The `$name` value is supplied separately through the Neo4j Java Driver.
 
 ### Seed Data
 
@@ -213,6 +221,14 @@ GET /api/developers/{name}
 ```
 
 Returns developer information including skills and projects.
+
+### Get Developer Projects
+
+```http
+GET /api/developers/{name}/projects
+```
+
+Returns projects connected to a developer through shared skills.
 
 ### Get Project Profile
 
